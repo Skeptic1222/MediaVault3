@@ -360,6 +360,7 @@ export const shareLinks = pgTable("share_links", {
   usageCount: integer("usage_count").default(0),
   expiresAt: timestamp("expires_at"),
   lastAccessedAt: timestamp("last_accessed_at"),
+  sharedWithEmails: jsonb("shared_with_emails").$type<string[]>(), // Array of email addresses to share with
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_share_links_resource").on(table.resourceType, table.resourceId),

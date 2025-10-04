@@ -26,6 +26,7 @@ export interface CreateShareLinkOptions {
     canDownload?: boolean;
     canView?: boolean;
   };
+  sharedWithEmails?: string[]; // Specific email addresses to share with
 }
 
 export interface ShareLinkInfo {
@@ -61,7 +62,8 @@ export async function createShareLink(options: CreateShareLinkOptions): Promise<
       password,
       expiresIn,
       maxUses,
-      permissions
+      permissions,
+      sharedWithEmails
     } = options;
 
     // Verify user owns the resource
@@ -90,7 +92,8 @@ export async function createShareLink(options: CreateShareLinkOptions): Promise<
         permissions: permissions || { canView: true, canDownload: true },
         maxUses: maxUses || null,
         usageCount: 0,
-        expiresAt
+        expiresAt,
+        sharedWithEmails: sharedWithEmails || null
       })
       .returning();
 
@@ -122,7 +125,8 @@ async function verifyResourceOwnership(
           ));
         return !!album;
       }
-      case 'folder': {
+      case 'folder':
+      case 'category': {
         const [folder] = await db
           .select()
           .from(folders)
@@ -211,11 +215,12 @@ export async function getShareLinkByCode(code: string): Promise<ShareLinkInfo | 
 }
 
 /**
- * Access shared resource (with password verification)
+ * Access shared resource (with password verification and email check)
  */
 export async function accessSharedResource(
   code: string,
-  password?: string
+  password?: string,
+  userEmail?: string
 ): Promise<{ success: boolean; resource?: any; error?: string }> {
   try {
     const shareInfo = await getShareLinkByCode(code);
@@ -226,6 +231,18 @@ export async function accessSharedResource(
 
     if (!shareInfo.isValid) {
       return { success: false, error: 'Share link expired or max uses reached' };
+    }
+
+    // Check if share is restricted to specific emails
+    if (shareInfo.shareLink.sharedWithEmails && shareInfo.shareLink.sharedWithEmails.length > 0) {
+      if (!userEmail) {
+        return { success: false, error: 'Email verification required' };
+      }
+
+      const emailList = shareInfo.shareLink.sharedWithEmails as string[];
+      if (!emailList.includes(userEmail.toLowerCase())) {
+        return { success: false, error: 'You do not have access to this resource' };
+      }
     }
 
     // Verify password if required
@@ -270,7 +287,8 @@ async function getSharedResource(resourceType: ResourceType, resourceId: string)
           .where(eq(albums.id, resourceId));
         return album;
       }
-      case 'folder': {
+      case 'folder':
+      case 'category': {
         const [folder] = await db
           .select()
           .from(folders)
@@ -298,6 +316,23 @@ async function getSharedResource(resourceType: ResourceType, resourceId: string)
   } catch (error) {
     logger.error('Error getting shared resource:', error);
     return null;
+  }
+}
+
+/**
+ * Get resources shared with a specific email
+ */
+export async function getResourcesSharedWithEmail(email: string): Promise<ShareLink[]> {
+  try {
+    const links = await db
+      .select()
+      .from(shareLinks)
+      .where(sql`${shareLinks.sharedWithEmails} @> ${JSON.stringify([email.toLowerCase()])}`);
+
+    return links;
+  } catch (error) {
+    logger.error('Error getting resources shared with email:', error);
+    return [];
   }
 }
 
