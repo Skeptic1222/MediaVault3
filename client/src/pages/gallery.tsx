@@ -12,6 +12,7 @@ import MediaListView from "@/components/gallery/MediaListView";
 import MediaLightbox from "@/components/gallery/MediaLightbox";
 import KeyboardNavigation from "@/components/gallery/KeyboardNavigation";
 import ImportModal from "@/components/import/ImportModal";
+import ShareDialog from "@/components/gallery/ShareDialog";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { Trash2, Download, Folder, X, CheckSquare } from "lucide-react";
 import {
@@ -80,6 +81,7 @@ export default function Gallery() {
   const [renameDialog, setRenameDialog] = useState<{ open: boolean; mediaId: string; filename: string } | null>(null);
   const [moveDialog, setMoveDialog] = useState<{ open: boolean; mediaId: string; filename: string } | null>(null);
   const [bulkMoveDialog, setBulkMoveDialog] = useState<{ open: boolean; mediaIds: string[] } | null>(null);
+  const [shareDialog, setShareDialog] = useState<{ open: boolean; mediaId: string; filename: string } | null>(null);
   const [newFilename, setNewFilename] = useState('');
 
   const {
@@ -350,6 +352,34 @@ export default function Gallery() {
     },
   });
 
+  // Create category mutation
+  const createCategoryMutation = useMutation({
+    mutationFn: async (data: { name: string; parentId?: string | null }) => {
+      return await apiRequest('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/categories"] });
+      toast({
+        title: "Success",
+        description: "Folder created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create folder",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Bulk move mutation
   const bulkMoveMutation = useMutation({
     mutationFn: async ({ mediaIds, categoryId }: { mediaIds: string[]; categoryId: string | null }) => {
@@ -418,6 +448,10 @@ export default function Gallery() {
     }
   };
 
+  const handleShare = (mediaId: string, filename: string) => {
+    setShareDialog({ open: true, mediaId, filename });
+  };
+
   const confirmDelete = () => {
     if (deleteDialog) {
       deleteMutation.mutate(deleteDialog.mediaId);
@@ -437,6 +471,16 @@ export default function Gallery() {
     if (moveDialog) {
       moveMutation.mutate({ mediaId: moveDialog.mediaId, categoryId });
       setMoveDialog(null);
+    }
+  };
+
+  const handleCreateFolder = () => {
+    const name = prompt("Enter folder name:");
+    if (name && name.trim()) {
+      createCategoryMutation.mutate({
+        name: name.trim(),
+        parentId: filters.categoryId || null
+      });
     }
   };
 
@@ -555,6 +599,7 @@ export default function Gallery() {
             filters={filters}
             onFilterChange={handleFilterChange}
             onUploadClick={() => setShowImportModal(true)}
+            onCreateFolderClick={handleCreateFolder}
             view={view}
             onViewChange={setView}
             data-testid="filter-controls"
@@ -718,6 +763,7 @@ export default function Gallery() {
         onClose={closeLightbox}
         onNext={navigateNext}
         onPrevious={navigatePrevious}
+        onShare={handleShare}
         data-testid="media-lightbox"
       />
 
@@ -904,6 +950,17 @@ export default function Gallery() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Share Dialog */}
+      {shareDialog && (
+        <ShareDialog
+          open={shareDialog.open}
+          onOpenChange={(open) => !open && setShareDialog(null)}
+          resourceType="file"
+          resourceId={shareDialog.mediaId}
+          resourceName={shareDialog.filename}
+        />
       )}
     </div>
   );

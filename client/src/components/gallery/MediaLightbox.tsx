@@ -16,6 +16,7 @@ interface MediaLightboxProps {
   onClose: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  onShare?: (mediaId: string, filename: string) => void;
   decryptionKey?: string | null;
 }
 
@@ -28,6 +29,7 @@ export default function MediaLightbox({
   onClose,
   onNext,
   onPrevious,
+  onShare,
   decryptionKey
 }: MediaLightboxProps) {
   const [fullscreenMode, setFullscreenMode] = useState<FullscreenMode>('normal');
@@ -552,6 +554,7 @@ export default function MediaLightbox({
                 size="sm"
                 className="text-white hover:bg-white/20"
                 title="Share"
+                onClick={() => onShare?.(currentFile.id, currentFile.originalName)}
                 data-testid="share-button"
               >
                 <Share2 className="w-5 h-5" />

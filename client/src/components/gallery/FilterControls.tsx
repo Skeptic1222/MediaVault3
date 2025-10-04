@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Search, Grid, List, Filter } from "lucide-react";
+import { Upload, Search, Grid, List, Filter, FolderPlus } from "lucide-react";
 
 interface FilterControlsProps {
   filters: {
@@ -14,11 +14,12 @@ interface FilterControlsProps {
   };
   onFilterChange: (filters: Partial<FilterControlsProps['filters']>) => void;
   onUploadClick: () => void;
+  onCreateFolderClick?: () => void;
   view: 'grid' | 'list';
   onViewChange: (view: 'grid' | 'list') => void;
 }
 
-export default function FilterControls({ filters, onFilterChange, onUploadClick, view, onViewChange }: FilterControlsProps) {
+export default function FilterControls({ filters, onFilterChange, onUploadClick, onCreateFolderClick, view, onViewChange }: FilterControlsProps) {
   const filterButtons = [
     { key: 'all', label: 'All Media', active: !filters.isVault && !filters.categoryId && !filters.mimeType, vault: false },
     { key: 'images', label: '🖼️ Images', active: filters.mimeType === 'images', vault: false },
@@ -131,8 +132,20 @@ export default function FilterControls({ filters, onFilterChange, onUploadClick,
           </SelectContent>
         </Select>
 
+        {/* Create Folder Button */}
+        {onCreateFolderClick && (
+          <Button
+            onClick={onCreateFolderClick}
+            variant="outline"
+            data-testid="create-folder-gallery"
+          >
+            <FolderPlus className="w-4 h-4 mr-2" />
+            New Folder
+          </Button>
+        )}
+
         {/* Upload Button */}
-        <Button 
+        <Button
           onClick={onUploadClick}
           className="bg-primary hover:bg-primary/90"
           data-testid="upload-media"
