@@ -4019,7 +4019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/share', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { resourceType, resourceId, password, expiresIn, maxUses, permissions } = req.body;
+      const { resourceType, resourceId, password, expiresIn, maxUses, permissions, sharedWithEmails } = req.body;
 
       if (!resourceType || !resourceId) {
         return res.status(400).json({ message: 'Resource type and ID are required' });
@@ -4033,7 +4033,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password,
         expiresIn,
         maxUses,
-        permissions
+        permissions,
+        sharedWithEmails
       });
 
       res.status(201).json({
