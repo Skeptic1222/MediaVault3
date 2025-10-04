@@ -352,10 +352,10 @@ export default function Gallery() {
     },
   });
 
-  // Create folder mutation
+  // Create category/folder mutation
   const createFolderMutation = useMutation({
     mutationFn: async (data: { name: string; parentId?: string | null }) => {
-      return await apiRequest('/api/folders', {
+      return await apiRequest('/api/categories', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -364,8 +364,8 @@ export default function Gallery() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/categories"] });
       toast({
         title: "Success",
         description: "Folder created successfully",

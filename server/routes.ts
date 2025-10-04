@@ -1459,11 +1459,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/categories', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: 'Only administrators can create categories' });
-      }
 
       const categoryData = insertCategorySchema.parse(req.body);
       const category = await storage.createCategory(categoryData);
@@ -1494,12 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/categories/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const user = await storage.getUser(userId);
       const { id } = req.params;
-      
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: 'Only administrators can update categories' });
-      }
 
       // Parse and validate the update data
       const updateData = req.body;
@@ -1531,12 +1521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/categories/:id', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const user = await storage.getUser(userId);
       const { id } = req.params;
-      
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: 'Only administrators can delete categories' });
-      }
 
       // Check if category has any media files
       const mediaFiles = await storage.getMediaFiles({ categoryId: id, limit: 1 });
