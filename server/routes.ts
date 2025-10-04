@@ -18,6 +18,7 @@ import { FILE_SIZE_LIMITS } from "@shared/constants";
 import { z } from "zod";
 import { logger } from "./utils/logger";
 import { rateLimiter } from "./middleware/security";
+import { fileFilter as validateFileUpload, validateUploadedFile } from "./middleware/fileValidation";
 
 // In-memory store for vault access tokens (in production, use Redis or similar)
 const vaultTokenStore = new Map<string, { userId: string; passphrase: string; expiresAt: number }>();
@@ -176,10 +177,7 @@ const upload = multer({
     files: process.env.NODE_ENV === 'production' ? 10 : 50,
     fieldSize: FILE_SIZE_LIMITS.MAX_FIELD_SIZE, // 1MB field size limit
   },
-  fileFilter: (req, file, cb) => {
-    // Allow all file types - the file manager should handle all types of files
-    cb(null, true);
-  },
+  fileFilter: validateFileUpload,
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {

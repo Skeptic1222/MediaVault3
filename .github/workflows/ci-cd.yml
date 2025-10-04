@@ -1,0 +1,271 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Job 1: Security & Code Quality
+  security-check:
+    name: Security & Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: TypeScript type checking
+        run: npm run check
+
+      - name: Lint code (if configured)
+        run: npm run lint || echo "No lint script configured"
+        continue-on-error: true
+
+  # Job 2: Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: security-check
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Generate coverage report
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+        continue-on-error: true
+
+  # Job 3: E2E Tests
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: security-check
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: mediavault_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/mediavault_test
+        run: npm run db:push
+
+      - name: Run E2E tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/mediavault_test
+          SESSION_SECRET: test-session-secret
+          GOOGLE_CLIENT_ID: test-client-id
+          GOOGLE_CLIENT_SECRET: test-client-secret
+          AUTH_DISABLED: true
+        run: npm run test:e2e
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+  # Job 4: Build Application
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build:client
+
+      - name: Build backend
+        run: npm run build:server
+
+      - name: Verify build artifacts
+        run: |
+          ls -la dist/public
+          ls -la dist/*.js
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+          retention-days: 7
+
+  # Job 5: Deploy to Staging (main branch only)
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to staging
+        env:
+          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+          DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your deployment script here
+          # Example: rsync -avz dist/ user@staging:/var/www/mediavault/
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests on staging..."
+          # Add smoke test commands here
+          # Example: curl -f https://staging.ay-i-t.com/mediavault/health
+
+  # Job 6: Deploy to Production (manual approval required)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://ay-i-t.com/mediavault
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to production
+        env:
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
+        run: |
+          echo "Deploying to production environment..."
+          # Add your production deployment script here
+
+      - name: Verify deployment
+        run: |
+          echo "Verifying production deployment..."
+          # Add verification commands
+          # Example: curl -f https://ay-i-t.com/mediavault/health
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Production deployment successful!"
+          # Add notification (Slack, Discord, email, etc.)
+
+  # Job 7: Dependency Security Scan
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'MediaVault'
+          path: '.'
+          format: 'HTML'
+        continue-on-error: true
+
+      - name: Upload OWASP report
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-check-report
+          path: reports/
+        continue-on-error: true
