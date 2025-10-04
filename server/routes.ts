@@ -3009,6 +3009,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced Search routes
+  app.post('/api/search', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const searchCriteria = req.body;
+
+      const searchService = await import('./services/searchService');
+      const results = await searchService.advancedSearch(userId, searchCriteria);
+
+      res.json(results);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error in advanced search:", err);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
+  app.get('/api/search/suggestions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { query } = req.query;
+
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: "Query parameter required" });
+      }
+
+      const searchService = await import('./services/searchService');
+      const suggestions = await searchService.getSearchSuggestions(userId, query);
+
+      res.json({ suggestions });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error getting search suggestions:", err);
+      res.status(500).json({ message: "Failed to get suggestions" });
+    }
+  });
+
+  // Saved searches routes
+  app.get('/api/saved-searches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+
+      const searchService = await import('./services/searchService');
+      const searches = await searchService.getUserSavedSearches(userId);
+
+      res.json(searches);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error fetching saved searches:", err);
+      res.status(500).json({ message: "Failed to fetch saved searches" });
+    }
+  });
+
+  app.post('/api/saved-searches', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { name, searchCriteria, description, icon, color, isPinned } = req.body;
+
+      if (!name || !searchCriteria) {
+        return res.status(400).json({ message: "Name and search criteria required" });
+      }
+
+      const searchService = await import('./services/searchService');
+      const savedSearch = await searchService.saveSearch(userId, name, searchCriteria, {
+        description,
+        icon,
+        color,
+        isPinned
+      });
+
+      res.json(savedSearch);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error saving search:", err);
+      res.status(500).json({ message: "Failed to save search" });
+    }
+  });
+
+  app.post('/api/saved-searches/:id/execute', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      const searchService = await import('./services/searchService');
+      const results = await searchService.executeSavedSearch(userId, id);
+
+      res.json(results);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error executing saved search:", err);
+      res.status(500).json({ message: "Failed to execute saved search" });
+    }
+  });
+
+  app.patch('/api/saved-searches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+      const updates = req.body;
+
+      const searchService = await import('./services/searchService');
+      const updated = await searchService.updateSavedSearch(userId, id, updates);
+
+      res.json(updated);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error updating saved search:", err);
+      res.status(500).json({ message: "Failed to update saved search" });
+    }
+  });
+
+  app.delete('/api/saved-searches/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      const searchService = await import('./services/searchService');
+      await searchService.deleteSavedSearch(userId, id);
+
+      res.json({ message: "Saved search deleted successfully" });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error deleting saved search:", err);
+      res.status(500).json({ message: "Failed to delete saved search" });
+    }
+  });
+
   // Documents routes
   app.get('/api/documents', isAuthenticated, async (req: any, res) => {
     try {

@@ -413,6 +413,25 @@ export const playHistory = pgTable("play_history", {
   index("idx_play_history_played_at").on(table.playedAt),
 ]);
 
+// Saved searches for quick access to common search criteria
+export const savedSearches = pgTable("saved_searches", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  searchCriteria: jsonb("search_criteria").notNull(), // JSON object with search parameters
+  icon: varchar("icon", { length: 50 }),
+  color: varchar("color", { length: 7 }),
+  isPinned: boolean("is_pinned").default(false),
+  usageCount: integer("usage_count").default(0),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_saved_searches_user").on(table.userId),
+  index("idx_saved_searches_pinned").on(table.userId, table.isPinned),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   mediaFiles: many(mediaFiles),
@@ -427,6 +446,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   shareLinks: many(shareLinks),
   playlists: many(playlists),
   playHistory: many(playHistory),
+  savedSearches: many(savedSearches),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -595,6 +615,13 @@ export const playHistoryRelations = relations(playHistory, ({ one }) => ({
   playlist: one(playlists, {
     fields: [playHistory.playlistId],
     references: [playlists.id],
+  }),
+}));
+
+export const savedSearchesRelations = relations(savedSearches, ({ one }) => ({
+  owner: one(users, {
+    fields: [savedSearches.userId],
+    references: [users.id],
   }),
 }));
 
@@ -809,6 +836,16 @@ export const insertPlayHistorySchema = createInsertSchema(playHistory).pick({
   completed: true,
 });
 
+export const insertSavedSearchSchema = createInsertSchema(savedSearches).pick({
+  userId: true,
+  name: true,
+  description: true,
+  searchCriteria: true,
+  icon: true,
+  color: true,
+  isPinned: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema> & { id: string };
 export type User = typeof users.$inferSelect;
@@ -847,3 +884,5 @@ export type PlaylistTrack = typeof playlistTracks.$inferSelect;
 export type InsertPlaylistTrack = z.infer<typeof insertPlaylistTrackSchema>;
 export type PlayHistory = typeof playHistory.$inferSelect;
 export type InsertPlayHistory = z.infer<typeof insertPlayHistorySchema>;
+export type SavedSearch = typeof savedSearches.$inferSelect;
+export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;

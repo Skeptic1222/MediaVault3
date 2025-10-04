@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Sprint 5: Advanced Search & Filtering Features
+  - Implemented advanced search service with full-text search capabilities
+  - Added saved searches feature for quick access to common search criteria
+  - Search suggestions based on user's files and tags
+  - Comprehensive filtering options:
+    - Full-text search across filenames and original names
+    - MIME type filtering
+    - Category filtering
+    - Tag filtering
+    - Date range filtering (from/to)
+    - File size range filtering (min/max)
+    - Encrypted/vault file filtering
+    - Favorite file filtering
+    - Thumbnail availability filtering
+  - New API endpoints:
+    - `POST /api/search` - Advanced search with multiple criteria
+    - `GET /api/search/suggestions` - Get search suggestions
+    - `GET /api/saved-searches` - List all saved searches
+    - `POST /api/saved-searches` - Create new saved search
+    - `POST /api/saved-searches/:id/execute` - Execute a saved search
+    - `PATCH /api/saved-searches/:id` - Update saved search
+    - `DELETE /api/saved-searches/:id` - Delete saved search
+  - Database schema additions:
+    - `saved_searches` table with user ownership, usage tracking, and pinning
+    - Indexes for optimized saved search queries
+
 - Sprint 4: Code quality improvements
   - Enhanced Content Security Policy (CSP) with production/development modes
   - Added LICENSE file (MIT)
@@ -83,12 +109,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Sprint 1-2: Security Hardening & Testing (Completed)
 - ✅ Sprint 3: Performance Optimization (Completed)
 - ✅ Sprint 4: Code Quality (Completed)
-- 🔄 Sprint 5+: New Features (Planned)
-  - Advanced search and filtering
-  - Media processing pipeline
-  - Multi-user collaboration
-  - Cloud storage integration
-  - Mobile native apps
+- ✅ Sprint 5: Advanced Search & Filtering (Completed)
+- 🔄 Sprint 6+: Additional Features (Planned)
+  - Media processing pipeline (video transcoding, image optimization)
+  - Multi-user collaboration features
+  - Cloud storage backend integration
+  - Mobile native apps (long-term)
 
 ### Planned Features
 See [ROADMAP_AND_PLANNED_FEATURES.md](./ROADMAP_AND_PLANNED_FEATURES.md) for detailed feature roadmap.
