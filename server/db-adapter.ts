@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { drizzle as drizzleMssql } from 'drizzle-orm/mssql';
+// import { drizzle as drizzleMssql } from 'drizzle-orm/mssql'; // MSSQL support disabled - PostgreSQL only
 import pkg from 'pg';
-import * as sql from 'mssql';
+// import * as sql from 'mssql'; // MSSQL support disabled - PostgreSQL only
 
 // Database adapter interface for multi-database support
 export interface DatabaseAdapter {

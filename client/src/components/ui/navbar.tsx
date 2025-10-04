@@ -233,9 +233,9 @@ export default function Navbar() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center space-x-3 text-sm" data-testid="user-menu-trigger">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={user?.profileImageUrl} alt={user?.firstName || user?.email || "User"} />
+                    <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.firstName || user?.email || "User"} />
                     <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
-                      {getInitials(user?.firstName, user?.lastName, user?.email)}
+                      {getInitials(user?.firstName || undefined, user?.lastName || undefined, user?.email || undefined)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden md:block text-left">

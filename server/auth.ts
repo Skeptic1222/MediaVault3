@@ -129,7 +129,7 @@ export function setupAuth(app: Express) {
         firstName: 'Dev',
         lastName: 'User',
         profileImageUrl: '',
-        role: devEmail === ADMIN_EMAIL ? 'admin' : 'user',
+        role: 'user', // Dev user is always a regular user, never admin
       });
       req.login(user, (err: unknown) => {
         if (err) return res.status(500).json({ error: 'Dev login failed' });

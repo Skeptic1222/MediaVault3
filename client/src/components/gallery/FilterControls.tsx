@@ -20,11 +20,11 @@ interface FilterControlsProps {
 
 export default function FilterControls({ filters, onFilterChange, onUploadClick, view, onViewChange }: FilterControlsProps) {
   const filterButtons = [
-    { key: 'all', label: 'All Media', active: !filters.isVault && !filters.categoryId && !filters.mimeType },
-    { key: 'images', label: '🖼️ Images', active: filters.mimeType === 'images' },
-    { key: 'videos', label: '🎬 Videos', active: filters.mimeType === 'videos' },
-    { key: 'recent', label: 'Recent', active: false },
-    { key: 'favorites', label: '⭐ Favorites', active: false },
+    { key: 'all', label: 'All Media', active: !filters.isVault && !filters.categoryId && !filters.mimeType, vault: false },
+    { key: 'images', label: '🖼️ Images', active: filters.mimeType === 'images', vault: false },
+    { key: 'videos', label: '🎬 Videos', active: filters.mimeType === 'videos', vault: false },
+    { key: 'recent', label: 'Recent', active: false, vault: false },
+    { key: 'favorites', label: '⭐ Favorites', active: false, vault: false },
     // SECURITY FIX: Removed insecure "Vault Access" filter - use navbar Vault link instead
   ];
 

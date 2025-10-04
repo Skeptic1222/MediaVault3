@@ -73,22 +73,13 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: Infinity,
       retry: false,
-      useErrorBoundary: false,
+      throwOnError: false,
     },
     mutations: {
       retry: false,
-      useErrorBoundary: false,
+      throwOnError: false,
     },
   },
-  logger: {
-    log: console.log,
-    warn: console.warn,
-    error: (error) => {
-      // Suppress 401 errors from being logged
-      if (error instanceof Error && error.message?.includes('401')) {
-        return;
-      }
-      console.error(error);
-    },
-  },
+  // Logger has been removed in newer versions of React Query
+  // Error handling is now done through onError callbacks
 });
