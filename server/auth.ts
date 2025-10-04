@@ -122,19 +122,33 @@ export function setupAuth(app: Express) {
   // DEV_AUTH short-circuit (local only)
   if (DEV_AUTH) {
     app.get(`/api/dev/login`, async (req: any, res) => {
-      const devEmail = 'dev@example.com';
-      const user = await storage.upsertUser({
-        id: 'dev-local-user',
-        email: devEmail,
-        firstName: 'Dev',
-        lastName: 'User',
-        profileImageUrl: '',
-        role: 'user', // Dev user is always a regular user, never admin
-      });
-      req.login(user, (err: unknown) => {
-        if (err) return res.status(500).json({ error: 'Dev login failed' });
-        return res.redirect(`${BASE_PATH}/`);
-      });
+      try {
+        // Use a unique dev email that won't conflict with real users
+        const devEmail = 'dev-local@mediavault.local';
+
+        // First, try to get existing dev user by ID
+        let user = await storage.getUser('dev-local-user');
+
+        // If user doesn't exist, create it
+        if (!user) {
+          user = await storage.upsertUser({
+            id: 'dev-local-user',
+            email: devEmail,
+            firstName: 'Dev',
+            lastName: 'User',
+            profileImageUrl: '',
+            role: 'user', // Dev user is always a regular user, never admin
+          });
+        }
+
+        req.login(user, (err: unknown) => {
+          if (err) return res.status(500).json({ error: 'Dev login failed' });
+          return res.redirect(`${BASE_PATH}/`);
+        });
+      } catch (err: any) {
+        console.error('Dev login error:', err);
+        return res.status(500).json({ error: 'Dev login failed' });
+      }
     });
   }
 

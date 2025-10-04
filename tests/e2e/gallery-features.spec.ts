@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Gallery Features', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the application
-    await page.goto('http://localhost:3001/mediavault');
+    // Login as dev user first
+    await page.goto('http://localhost:3001/mediavault/api/dev/login');
 
-    // Wait for authentication to complete (development mode auto-login)
-    await page.waitForURL(/.*\/mediavault.*/);
+    // Wait for redirect to home after login
+    await page.waitForURL(/.*\/mediavault\/?$/);
 
     // Navigate to gallery
-    await page.click('a[href="/mediavault/gallery"]');
+    await page.goto('http://localhost:3001/mediavault/gallery');
     await page.waitForURL('**/gallery');
   });
 
