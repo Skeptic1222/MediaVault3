@@ -77,7 +77,11 @@ export const categories = pgTable("categories", {
   folderPath: varchar("folder_path", { length: 1000 }), // Original folder path from import
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_categories_slug").on(table.slug),
+  index("idx_categories_parent").on(table.parentId),
+  index("idx_categories_vault").on(table.isVault),
+]);
 
 // Media files table with binary storage
 export const mediaFiles = pgTable("media_files", {
@@ -118,6 +122,9 @@ export const mediaFiles = pgTable("media_files", {
   index("idx_media_files_category").on(table.categoryId),
   index("idx_media_files_uploaded_by").on(table.uploadedBy),
   index("idx_media_files_created_at").on(table.createdAt),
+  index("idx_media_files_deleted").on(table.isDeleted),
+  index("idx_media_files_favorite").on(table.isFavorite),
+  index("idx_media_files_category_deleted").on(table.categoryId, table.isDeleted), // Composite for category queries
   unique("unique_media_files_sha256_uploaded_by").on(table.sha256Hash, table.uploadedBy),
 ]);
 
@@ -134,7 +141,11 @@ export const importBatches = pgTable("import_batches", {
   userId: varchar("user_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_import_batches_user").on(table.userId),
+  index("idx_import_batches_status").on(table.status),
+  index("idx_import_batches_created").on(table.createdAt),
+]);
 
 // User activity logs for security auditing
 export const activityLogs = pgTable("activity_logs", {
@@ -147,7 +158,13 @@ export const activityLogs = pgTable("activity_logs", {
   userAgent: text("user_agent"),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_activity_logs_user").on(table.userId),
+  index("idx_activity_logs_action").on(table.action),
+  index("idx_activity_logs_created").on(table.createdAt),
+  index("idx_activity_logs_user_created").on(table.userId, table.createdAt), // Composite for user timeline
+  index("idx_activity_logs_resource").on(table.resource, table.resourceId), // Composite for resource audit
+]);
 
 // Folders table for hierarchical file organization
 export const folders = pgTable("folders", {
@@ -217,6 +234,11 @@ export const files = pgTable("files", {
   index("idx_files_user").on(table.userId),
   index("idx_files_hash").on(table.sha256Hash),
   index("idx_files_type").on(table.fileType),
+  index("idx_files_mime").on(table.mimeType),
+  index("idx_files_encrypted").on(table.isEncrypted),
+  index("idx_files_deleted").on(table.isDeleted),
+  index("idx_files_user_encrypted").on(table.userId, table.isEncrypted), // Composite for user vault queries
+  index("idx_files_user_mime").on(table.userId, table.mimeType), // Composite for user media type queries
   unique("unique_files_hash_user").on(table.sha256Hash, table.userId),
 ]);
 
