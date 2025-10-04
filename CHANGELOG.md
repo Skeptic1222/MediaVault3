@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Gallery/Album Sharing Feature
+  - Share albums, folders, and files with public links
+  - Optional password protection for shared links
+  - Expiration dates (configurable in hours)
+  - Usage limits (max number of accesses)
+  - Link management (create, update, delete)
+  - Usage tracking and analytics
+  - New API endpoints:
+    - `POST /api/share` - Create share link
+    - `GET /api/share/:code` - Get share link info
+    - `POST /api/share/:code/access` - Access shared resource
+    - `GET /api/share/resource/:type/:id` - Get resource's share links
+    - `DELETE /api/share/:code` - Delete share link
+    - `PATCH /api/share/:code` - Update share link
+    - `GET /api/share` - List user's share links
+  - Features:
+    - 12-character unique URL-safe codes (nanoid)
+    - SHA-256 password hashing
+    - Ownership verification
+    - Automatic usage increment
+    - Expiration and max-use validation
+
 - Sprint 6: Media Processing Pipeline
   - Background job processing system for async media tasks
   - Video transcoding service with FFmpeg integration

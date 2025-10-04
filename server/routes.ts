@@ -4020,6 +4020,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Gallery/Album Sharing routes
+  app.post('/api/share', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { resourceType, resourceId, password, expiresIn, maxUses, permissions } = req.body;
+
+      if (!resourceType || !resourceId) {
+        return res.status(400).json({ message: 'Resource type and ID are required' });
+      }
+
+      const sharingService = await import('./services/sharingService');
+      const shareLink = await sharingService.createShareLink({
+        resourceType,
+        resourceId,
+        userId,
+        password,
+        expiresIn,
+        maxUses,
+        permissions
+      });
+
+      res.status(201).json({
+        ...shareLink,
+        url: `${req.protocol}://${req.get('host')}/share/${shareLink.code}`
+      });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error creating share link:", err);
+      res.status(500).json({ message: err.message || "Failed to create share link" });
+    }
+  });
+
+  app.get('/api/share/:code', async (req: any, res) => {
+    try {
+      const { code } = req.params;
+
+      const sharingService = await import('./services/sharingService');
+      const shareInfo = await sharingService.getShareLinkByCode(code);
+
+      if (!shareInfo) {
+        return res.status(404).json({ message: 'Share link not found' });
+      }
+
+      res.json({
+        isValid: shareInfo.isValid,
+        requiresPassword: shareInfo.requiresPassword,
+        resourceType: shareInfo.shareLink.resourceType,
+        expiresAt: shareInfo.shareLink.expiresAt,
+        maxUses: shareInfo.shareLink.maxUses,
+        usageCount: shareInfo.shareLink.usageCount
+      });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error getting share link:", err);
+      res.status(500).json({ message: "Failed to get share link" });
+    }
+  });
+
+  app.post('/api/share/:code/access', async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const { password } = req.body;
+
+      const sharingService = await import('./services/sharingService');
+      const result = await sharingService.accessSharedResource(code, password);
+
+      if (!result.success) {
+        return res.status(result.error === 'Password required' ? 401 : 403)
+          .json({ message: result.error });
+      }
+
+      res.json(result.resource);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error accessing shared resource:", err);
+      res.status(500).json({ message: "Failed to access shared resource" });
+    }
+  });
+
+  app.get('/api/share/resource/:resourceType/:resourceId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { resourceType, resourceId } = req.params;
+
+      const sharingService = await import('./services/sharingService');
+      const links = await sharingService.getResourceShareLinks(resourceType as any, resourceId, userId);
+
+      res.json(links);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error getting resource share links:", err);
+      res.status(500).json({ message: "Failed to get share links" });
+    }
+  });
+
+  app.delete('/api/share/:code', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { code } = req.params;
+
+      const sharingService = await import('./services/sharingService');
+      const deleted = await sharingService.deleteShareLink(code, userId);
+
+      if (!deleted) {
+        return res.status(404).json({ message: 'Share link not found' });
+      }
+
+      res.json({ message: 'Share link deleted successfully' });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error deleting share link:", err);
+      res.status(500).json({ message: "Failed to delete share link" });
+    }
+  });
+
+  app.patch('/api/share/:code', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { code } = req.params;
+      const updates = req.body;
+
+      const sharingService = await import('./services/sharingService');
+      const updated = await sharingService.updateShareLink(code, userId, updates);
+
+      if (!updated) {
+        return res.status(404).json({ message: 'Share link not found' });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error updating share link:", err);
+      res.status(500).json({ message: "Failed to update share link" });
+    }
+  });
+
+  app.get('/api/share', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+
+      const sharingService = await import('./services/sharingService');
+      const links = await sharingService.getUserShareLinks(userId);
+
+      res.json(links);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error getting user share links:", err);
+      res.status(500).json({ message: "Failed to get share links" });
+    }
+  });
+
   // Register media preview routes
   const mediaPreviewRouter = (await import('./routes/media-preview.js')).default;
   app.use(mediaPreviewRouter);
