@@ -1460,7 +1460,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
 
-      const categoryData = insertCategorySchema.parse(req.body);
+      // Generate slug from name if not provided
+      const slug = req.body.slug || req.body.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      const categoryData = insertCategorySchema.parse({ ...req.body, slug });
       const category = await storage.createCategory(categoryData);
       
       // Log activity

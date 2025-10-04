@@ -691,6 +691,8 @@ export const insertCategorySchema = createInsertSchema(categories).pick({
   metadata: true,
   color: true,
   folderPath: true,
+}).extend({
+  slug: z.string().optional(),  // Make slug optional since it's auto-generated
 });
 
 export const insertMediaFileSchema = createInsertSchema(mediaFiles).pick({
