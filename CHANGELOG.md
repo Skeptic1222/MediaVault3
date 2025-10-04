@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Sprint 6: Media Processing Pipeline
+  - Background job processing system for async media tasks
+  - Video transcoding service with FFmpeg integration
+    - Configurable quality presets (low, medium, high)
+    - Resolution control (default 1280x720)
+    - H.264 encoding with AAC audio
+    - Automatic retry logic (up to 3 attempts)
+  - Image optimization service with Sharp
+    - Format conversion (WebP, JPEG, PNG)
+    - Smart resizing with aspect ratio preservation
+    - Quality control and compression
+    - File size savings tracking
+  - Processing job management
+    - Priority-based job queue
+    - Progress tracking (0-100%)
+    - Job status monitoring (pending, processing, completed, failed)
+    - Retry mechanism with attempt tracking
+  - New API endpoints:
+    - `POST /api/processing/jobs` - Create new processing job
+    - `GET /api/processing/jobs` - List user's processing jobs
+    - `GET /api/processing/jobs/:id` - Get job details
+    - `DELETE /api/processing/jobs/:id` - Cancel pending job
+  - Database schema additions:
+    - `processing_jobs` table with user/file relations
+    - Indexes for efficient job queue queries
+    - JSON storage for input params and output data
+
 - Sprint 5: Advanced Search & Filtering Features
   - Implemented advanced search service with full-text search capabilities
   - Added saved searches feature for quick access to common search criteria
@@ -110,11 +137,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Sprint 3: Performance Optimization (Completed)
 - ✅ Sprint 4: Code Quality (Completed)
 - ✅ Sprint 5: Advanced Search & Filtering (Completed)
-- 🔄 Sprint 6+: Additional Features (Planned)
-  - Media processing pipeline (video transcoding, image optimization)
-  - Multi-user collaboration features
-  - Cloud storage backend integration
-  - Mobile native apps (long-term)
+- ✅ Sprint 6: Media Processing Pipeline (Completed)
+- 🔄 Sprint 7+: Future Enhancements (Planned)
+  - Multi-user collaboration features (shared folders, permissions)
+  - Cloud storage backend integration (S3, Azure Blob, R2)
+  - Real-time notifications and WebSocket support
+  - Mobile native apps (React Native, long-term)
 
 ### Planned Features
 See [ROADMAP_AND_PLANNED_FEATURES.md](./ROADMAP_AND_PLANNED_FEATURES.md) for detailed feature roadmap.

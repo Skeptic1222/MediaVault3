@@ -432,6 +432,32 @@ export const savedSearches = pgTable("saved_searches", {
   index("idx_saved_searches_pinned").on(table.userId, table.isPinned),
 ]);
 
+// Processing jobs for background media processing tasks
+export const processingJobs = pgTable("processing_jobs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  fileId: uuid("file_id").notNull(),
+  jobType: varchar("job_type", { length: 50 }).notNull(), // 'transcode_video', 'optimize_image', 'generate_thumbnail', etc.
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending', 'processing', 'completed', 'failed'
+  progress: integer("progress").default(0), // 0-100
+  priority: integer("priority").default(5), // 1-10, higher is more priority
+  inputParams: jsonb("input_params"), // Input parameters for the job
+  outputData: jsonb("output_data"), // Results and output metadata
+  errorMessage: text("error_message"),
+  attempts: integer("attempts").default(0),
+  maxAttempts: integer("max_attempts").default(3),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_processing_jobs_user").on(table.userId),
+  index("idx_processing_jobs_file").on(table.fileId),
+  index("idx_processing_jobs_status").on(table.status),
+  index("idx_processing_jobs_type").on(table.jobType),
+  index("idx_processing_jobs_priority").on(table.priority, table.createdAt), // Composite for queue ordering
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   mediaFiles: many(mediaFiles),
@@ -447,6 +473,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   playlists: many(playlists),
   playHistory: many(playHistory),
   savedSearches: many(savedSearches),
+  processingJobs: many(processingJobs),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -622,6 +649,17 @@ export const savedSearchesRelations = relations(savedSearches, ({ one }) => ({
   owner: one(users, {
     fields: [savedSearches.userId],
     references: [users.id],
+  }),
+}));
+
+export const processingJobsRelations = relations(processingJobs, ({ one }) => ({
+  user: one(users, {
+    fields: [processingJobs.userId],
+    references: [users.id],
+  }),
+  file: one(files, {
+    fields: [processingJobs.fileId],
+    references: [files.id],
   }),
 }));
 
@@ -846,6 +884,20 @@ export const insertSavedSearchSchema = createInsertSchema(savedSearches).pick({
   isPinned: true,
 });
 
+export const insertProcessingJobSchema = createInsertSchema(processingJobs).pick({
+  userId: true,
+  fileId: true,
+  jobType: true,
+  status: true,
+  progress: true,
+  priority: true,
+  inputParams: true,
+  outputData: true,
+  errorMessage: true,
+  attempts: true,
+  maxAttempts: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema> & { id: string };
 export type User = typeof users.$inferSelect;
@@ -886,3 +938,5 @@ export type PlayHistory = typeof playHistory.$inferSelect;
 export type InsertPlayHistory = z.infer<typeof insertPlayHistorySchema>;
 export type SavedSearch = typeof savedSearches.$inferSelect;
 export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;
+export type ProcessingJob = typeof processingJobs.$inferSelect;
+export type InsertProcessingJob = z.infer<typeof insertProcessingJobSchema>;

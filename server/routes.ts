@@ -3939,6 +3939,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Media Processing routes
+  app.post('/api/processing/jobs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { fileId, jobType, inputParams, priority } = req.body;
+
+      if (!fileId || !jobType) {
+        return res.status(400).json({ message: 'File ID and job type are required' });
+      }
+
+      const processingService = await import('./services/mediaProcessingService');
+      const job = await processingService.createProcessingJob(userId, fileId, jobType, inputParams, priority);
+
+      res.status(201).json(job);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error creating processing job:", err);
+      res.status(500).json({ message: "Failed to create processing job" });
+    }
+  });
+
+  app.get('/api/processing/jobs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const processingService = await import('./services/mediaProcessingService');
+      const jobs = await processingService.getUserJobs(userId, limit);
+
+      res.json(jobs);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error fetching processing jobs:", err);
+      res.status(500).json({ message: "Failed to fetch processing jobs" });
+    }
+  });
+
+  app.get('/api/processing/jobs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      const processingService = await import('./services/mediaProcessingService');
+      const job = await processingService.getJobById(id);
+
+      if (!job) {
+        return res.status(404).json({ message: 'Job not found' });
+      }
+
+      // Verify user owns the job
+      if (job.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      res.json(job);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error fetching processing job:", err);
+      res.status(500).json({ message: "Failed to fetch processing job" });
+    }
+  });
+
+  app.delete('/api/processing/jobs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      const processingService = await import('./services/mediaProcessingService');
+      const cancelled = await processingService.cancelJob(id, userId);
+
+      if (!cancelled) {
+        return res.status(404).json({ message: 'Job not found or cannot be cancelled' });
+      }
+
+      res.json({ message: 'Job cancelled successfully' });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error cancelling processing job:", err);
+      res.status(500).json({ message: "Failed to cancel processing job" });
+    }
+  });
+
   // Register media preview routes
   const mediaPreviewRouter = (await import('./routes/media-preview.js')).default;
   app.use(mediaPreviewRouter);
