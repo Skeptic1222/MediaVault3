@@ -4074,15 +4074,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Access shared resource - requires authentication if sharedWithEmails is set
   app.post('/api/share/:code/access', async (req: any, res) => {
     try {
       const { code } = req.params;
       const { password } = req.body;
 
+      // Get the user's email if authenticated
+      const userEmail = req.user?.email;
+
       const sharingService = await import('./services/sharingService');
-      const result = await sharingService.accessSharedResource(code, password);
+      const result = await sharingService.accessSharedResource(code, password, userEmail);
 
       if (!result.success) {
+        // Special handling for email verification required
+        if (result.error === 'Email verification required') {
+          return res.status(401).json({
+            message: result.error,
+            requiresAuth: true
+          });
+        }
+
         return res.status(result.error === 'Password required' ? 401 : 403)
           .json({ message: result.error });
       }
@@ -4149,6 +4161,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const err = error as Error;
       logger.error("Error updating share link:", err);
       res.status(500).json({ message: "Failed to update share link" });
+    }
+  });
+
+  // Invite link access - requires authentication and email verification
+  app.get('/api/share/:code/invite', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const userEmail = req.user.email;
+
+      const sharingService = await import('./services/sharingService');
+      const shareInfo = await sharingService.getShareLinkByCode(code);
+
+      if (!shareInfo) {
+        return res.status(404).json({ message: 'Share link not found' });
+      }
+
+      if (!shareInfo.isValid) {
+        return res.status(403).json({ message: 'Share link expired or max uses reached' });
+      }
+
+      // Check if share is restricted to specific emails
+      if (shareInfo.shareLink.sharedWithEmails && shareInfo.shareLink.sharedWithEmails.length > 0) {
+        const emailList = shareInfo.shareLink.sharedWithEmails as string[];
+        if (!emailList.includes(userEmail.toLowerCase())) {
+          return res.status(403).json({
+            message: 'This resource has not been shared with your account',
+            userEmail: userEmail,
+            allowedEmails: emailList // For debugging, remove in production
+          });
+        }
+      }
+
+      // Increment usage count
+      const result = await sharingService.accessSharedResource(code, undefined, userEmail);
+
+      if (!result.success) {
+        return res.status(403).json({ message: result.error });
+      }
+
+      // Return the resource info with redirect URL
+      const redirectUrl = shareInfo.shareLink.resourceType === 'category' || shareInfo.shareLink.resourceType === 'folder'
+        ? `/gallery?folder=${shareInfo.shareLink.resourceId}`
+        : `/media/${shareInfo.shareLink.resourceId}`;
+
+      res.json({
+        success: true,
+        resource: result.resource,
+        redirectUrl,
+        shareLink: shareInfo.shareLink
+      });
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error accessing invite:", err);
+      res.status(500).json({ message: "Failed to access shared resource" });
+    }
+  });
+
+  // Get resources shared with the current user's email
+  app.get('/api/share/shared-with-me', isAuthenticated, async (req: any, res) => {
+    try {
+      const userEmail = req.user.email;
+
+      const sharingService = await import('./services/sharingService');
+      const sharedLinks = await sharingService.getResourcesSharedWithEmail(userEmail);
+
+      res.json(sharedLinks);
+    } catch (error) {
+      const err = error as Error;
+      logger.error("Error getting shared resources:", err);
+      res.status(500).json({ message: "Failed to get shared resources" });
     }
   });
 
