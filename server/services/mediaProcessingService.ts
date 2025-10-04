@@ -9,7 +9,7 @@ import { db } from '../db';
 import { processingJobs, files, mediaFiles } from '../../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import type { ProcessingJob, InsertProcessingJob } from '../../shared/schema';
-import { logger } from '../logger';
+import { logger } from '../utils/logger';
 import sharp from 'sharp';
 import { exec } from 'child_process';
 import { promisify } from 'util';

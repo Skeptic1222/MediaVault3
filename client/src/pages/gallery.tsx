@@ -14,7 +14,7 @@ import KeyboardNavigation from "@/components/gallery/KeyboardNavigation";
 import ImportModal from "@/components/import/ImportModal";
 import ShareDialog from "@/components/gallery/ShareDialog";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
-import { Trash2, Download, Folder, X, CheckSquare } from "lucide-react";
+import { Trash2, Download, Folder, X, CheckSquare, Users } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { MediaFile, Category } from "@shared/schema";
+import type { MediaFile, Category, ShareLink } from "@shared/schema";
 
 // Type definitions for API responses
 type MediaResponse = {
@@ -58,9 +58,10 @@ export default function Gallery() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [sharedView, setSharedView] = useState<'mine' | 'shared'>('mine');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
-  
+
   const [filters, setFilters] = useState({
     categoryId: undefined as string | undefined,
     isVault: false,
@@ -129,6 +130,13 @@ export default function Gallery() {
 
   const { data: stats } = useQuery<StatsResponse>({
     queryKey: ["/api/stats"],
+    retry: false,
+  });
+
+  // Query for shared resources
+  const { data: sharedResources, isLoading: isLoadingShared } = useQuery<ShareLink[]>({
+    queryKey: ["/api/share/shared-with-me"],
+    enabled: sharedView === 'shared',
     retry: false,
   });
 
@@ -605,13 +613,44 @@ export default function Gallery() {
             data-testid="filter-controls"
           />
 
-          {/* Category Hierarchy */}
-          <CategoryHierarchy
-            categories={categories || []}
-            selectedCategoryId={filters.categoryId}
-            onCategorySelect={(categoryId) => handleFilterChange({ categoryId })}
-            data-testid="category-hierarchy"
-          />
+          {/* Shared View Toggle */}
+          <div className="mb-6">
+            <div className="flex gap-2 bg-secondary/30 rounded-lg p-1 inline-flex">
+              <Button
+                variant={sharedView === 'mine' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSharedView('mine')}
+                className="transition-all"
+                data-testid="toggle-my-folders"
+              >
+                <Folder className="w-4 h-4 mr-2" />
+                My Folders
+              </Button>
+              <Button
+                variant={sharedView === 'shared' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSharedView('shared')}
+                className="transition-all"
+                data-testid="toggle-shared-with-me"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Shared with Me
+              </Button>
+            </div>
+          </div>
+
+          {/* Category Hierarchy - Only show in "My Folders" view */}
+          {sharedView === 'mine' && (
+            <CategoryHierarchy
+              categories={categories || []}
+              selectedCategoryId={filters.categoryId}
+              onCategorySelect={(categoryId) => handleFilterChange({ categoryId })}
+              onShareCategory={(categoryId, categoryName) => {
+                setShareDialog({ open: true, mediaId: categoryId, filename: categoryName });
+              }}
+              data-testid="category-hierarchy"
+            />
+          )}
 
           {/* Bulk Actions Toolbar - Shown when items are selected */}
           {selectedItems.size > 0 && (
@@ -704,40 +743,147 @@ export default function Gallery() {
           )}
 
           {/* Media Grid or List View */}
-          {view === 'grid' ? (
-            <MediaGrid
-              mediaFiles={mediaFiles}
-              isLoading={isLoading}
-              selectedIndex={selectedIndex}
-              focusedIndex={focusedIndex}
-              onMediaSelect={handleMediaSelect}
-              selectedItems={selectedItems}
-              onItemSelect={handleItemSelect}
-              onSelectAll={handleSelectAll}
-              isFetchingMore={isFetchingNextPage}
-              sentinelRef={sentinelRef}
-              data-testid="media-grid"
-            />
+          {sharedView === 'mine' ? (
+            view === 'grid' ? (
+              <MediaGrid
+                mediaFiles={mediaFiles}
+                isLoading={isLoading}
+                selectedIndex={selectedIndex}
+                focusedIndex={focusedIndex}
+                onMediaSelect={handleMediaSelect}
+                selectedItems={selectedItems}
+                onItemSelect={handleItemSelect}
+                onSelectAll={handleSelectAll}
+                isFetchingMore={isFetchingNextPage}
+                sentinelRef={sentinelRef}
+                onShare={handleShare}
+                data-testid="media-grid"
+              />
+            ) : (
+              <MediaListView
+                mediaFiles={mediaFiles}
+                isLoading={isLoading}
+                selectedItems={selectedItems}
+                onMediaSelect={handleMediaSelect}
+                onItemSelect={handleItemSelect}
+                onSelectAll={handleSelectAll}
+                onDelete={handleDelete}
+                onRename={handleRename}
+                onMove={handleMove}
+                onDownload={handleDownload}
+                onToggleFavorite={handleToggleFavorite}
+                onMoveToVault={handleMoveToVault}
+                data-testid="media-list"
+              />
+            )
           ) : (
-            <MediaListView
-              mediaFiles={mediaFiles}
-              isLoading={isLoading}
-              selectedItems={selectedItems}
-              onMediaSelect={handleMediaSelect}
-              onItemSelect={handleItemSelect}
-              onSelectAll={handleSelectAll}
-              onDelete={handleDelete}
-              onRename={handleRename}
-              onMove={handleMove}
-              onDownload={handleDownload}
-              onToggleFavorite={handleToggleFavorite}
-              onMoveToVault={handleMoveToVault}
-              data-testid="media-list"
-            />
+            /* Shared with Me View */
+            <div className="space-y-4" data-testid="shared-resources">
+              {isLoadingShared ? (
+                <div className="flex justify-center py-12">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                    <span className="text-muted-foreground">Loading shared resources...</span>
+                  </div>
+                </div>
+              ) : sharedResources && sharedResources.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sharedResources.map((shareLink) => (
+                    <div
+                      key={shareLink.id}
+                      className="bg-card border-2 border-primary/30 rounded-lg p-6 hover:shadow-lg transition-all cursor-pointer group"
+                      onClick={() => {
+                        // Navigate to shared resource
+                        if (shareLink.resourceType === 'category' || shareLink.resourceType === 'folder') {
+                          handleFilterChange({ categoryId: shareLink.resourceId });
+                          setSharedView('mine');
+                        }
+                      }}
+                      data-testid={`shared-resource-${shareLink.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                            <Users className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">
+                              {shareLink.resourceType === 'category' || shareLink.resourceType === 'folder'
+                                ? 'Shared Folder'
+                                : 'Shared File'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {shareLink.resourceType}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                          Shared
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Resource ID:</span>
+                          <span className="font-mono text-xs">{shareLink.resourceId.slice(0, 8)}...</span>
+                        </div>
+
+                        {shareLink.expiresAt && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Expires:</span>
+                            <span className="text-xs">
+                              {new Date(shareLink.expiresAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+
+                        {shareLink.permissions && typeof shareLink.permissions === 'object' && (
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                            {(shareLink.permissions as any)?.canView && (
+                              <span className="px-2 py-1 bg-secondary text-xs rounded">View</span>
+                            )}
+                            {(shareLink.permissions as any)?.canDownload && (
+                              <span className="px-2 py-1 bg-secondary text-xs rounded">Download</span>
+                            )}
+                            {(shareLink.permissions as any)?.canEdit && (
+                              <span className="px-2 py-1 bg-secondary text-xs rounded">Edit</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (shareLink.resourceType === 'category' || shareLink.resourceType === 'folder') {
+                              handleFilterChange({ categoryId: shareLink.resourceId });
+                              setSharedView('mine');
+                            }
+                          }}
+                        >
+                          Open Shared {shareLink.resourceType === 'category' || shareLink.resourceType === 'folder' ? 'Folder' : 'File'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg font-semibold mb-2">No shared resources</h3>
+                  <p className="text-muted-foreground">
+                    When others share folders or files with you, they will appear here.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Infinite scroll loading indicator */}
-          {isFetchingNextPage && (
+          {/* Infinite scroll loading indicator - Only in "My Folders" view */}
+          {sharedView === 'mine' && isFetchingNextPage && (
             <div className="flex justify-center py-8" data-testid="infinite-scroll-loading">
               <div className="flex items-center gap-3">
                 <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
@@ -746,10 +892,17 @@ export default function Gallery() {
             </div>
           )}
 
-          {/* Show total count */}
-          {totalItems > 0 && (
+          {/* Show total count - Only in "My Folders" view */}
+          {sharedView === 'mine' && totalItems > 0 && (
             <div className="text-center mt-8 text-sm text-muted-foreground">
               Showing {mediaFiles.length} of {totalItems} items
+            </div>
+          )}
+
+          {/* Show shared resources count */}
+          {sharedView === 'shared' && sharedResources && sharedResources.length > 0 && (
+            <div className="text-center mt-8 text-sm text-muted-foreground">
+              {sharedResources.length} shared resource{sharedResources.length !== 1 ? 's' : ''}
             </div>
           )}
         </div>
@@ -957,7 +1110,10 @@ export default function Gallery() {
         <ShareDialog
           open={shareDialog.open}
           onOpenChange={(open) => !open && setShareDialog(null)}
-          resourceType="file"
+          resourceType={
+            // Determine resource type based on whether it's a category or file
+            categories?.some(cat => cat.id === shareDialog.mediaId) ? 'category' : 'file'
+          }
           resourceId={shareDialog.mediaId}
           resourceName={shareDialog.filename}
         />

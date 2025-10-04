@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Folder, FolderOpen, Plus, Settings, Loader2 } from "lucide-react";
+import { ChevronRight, Folder, FolderOpen, Plus, Settings, Loader2, Share2 } from "lucide-react";
 import ManageCategoriesDialog from "./ManageCategoriesDialog";
 import type { Category } from "@shared/schema";
 
@@ -9,9 +9,10 @@ interface CategoryHierarchyProps {
   categories: Category[];
   selectedCategoryId?: string;
   onCategorySelect: (categoryId?: string) => void;
+  onShareCategory?: (categoryId: string, categoryName: string) => void;
 }
 
-export default function CategoryHierarchy({ categories, selectedCategoryId, onCategorySelect }: CategoryHierarchyProps) {
+export default function CategoryHierarchy({ categories, selectedCategoryId, onCategorySelect, onShareCategory }: CategoryHierarchyProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [currentPath, setCurrentPath] = useState<Category[]>([]);
   const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
@@ -223,7 +224,7 @@ export default function CategoryHierarchy({ categories, selectedCategoryId, onCa
 
         {/* Root categories or current category children */}
         {sortCategories(
-          selectedCategoryId 
+          selectedCategoryId
             ? categoryMap.get(selectedCategoryId)?.children || []
             : rootCategories
         ).map((category) => (
@@ -235,6 +236,7 @@ export default function CategoryHierarchy({ categories, selectedCategoryId, onCa
             onToggleExpanded={toggleExpanded}
             onClick={handleCategoryClick}
             itemCount={getCategoryStats(category.id)}
+            onShare={onShareCategory}
           />
         ))}
       </div>
@@ -260,6 +262,7 @@ export default function CategoryHierarchy({ categories, selectedCategoryId, onCa
                   onClick={handleCategoryClick}
                   itemCount={getCategoryStats(child.id)}
                   size="sm"
+                  onShare={onShareCategory}
                 />
               ))}
             </div>
@@ -284,18 +287,21 @@ interface CategoryItemProps {
   onClick: (category: Category) => void;
   itemCount: number;
   size?: 'sm' | 'md';
+  onShare?: (categoryId: string, categoryName: string) => void;
 }
 
-function CategoryItem({ 
-  category, 
-  isSelected, 
-  isExpanded, 
-  onToggleExpanded, 
-  onClick, 
+function CategoryItem({
+  category,
+  isSelected,
+  isExpanded,
+  onToggleExpanded,
+  onClick,
   itemCount,
-  size = 'md'
+  size = 'md',
+  onShare
 }: CategoryItemProps) {
   const hasChildren = (category.children?.length || 0) > 0;
+  const [isHovered, setIsHovered] = useState(false);
   
   const getIcon = () => {
     if (category.icon) {
@@ -308,7 +314,7 @@ function CategoryItem({
   };
 
   return (
-    <div className="relative">
+    <div className="relative group">
       <button
         className={`flex items-center space-x-2 p-3 rounded-lg transition-colors text-left w-full ${
           size === 'sm' ? 'p-2' : 'p-3'
@@ -320,6 +326,8 @@ function CategoryItem({
             : 'bg-secondary hover:bg-secondary/80'
         }`}
         onClick={() => onClick(category)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         data-testid={`category-${category.slug}`}
       >
         <span className={size === 'sm' ? 'text-base' : 'text-lg'}>
@@ -335,21 +343,41 @@ function CategoryItem({
         </div>
       </button>
 
-      {/* Expand/Collapse button for categories with children */}
-      {hasChildren && (
-        <button
-          className="absolute top-1 right-1 p-1 rounded hover:bg-black/10 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpanded(category.id);
-          }}
-          title={isExpanded ? 'Collapse' : 'Expand'}
-        >
-          <ChevronRight 
-            className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-          />
-        </button>
-      )}
+      {/* Action buttons container - top-right corner */}
+      <div className="absolute top-1 right-1 flex gap-1">
+        {/* Share button - always visible */}
+        {onShare && (
+          <button
+            className={`p-1.5 rounded transition-all bg-white/20 hover:bg-white/40 ${
+              isSelected ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare(category.id, category.name);
+            }}
+            title="Share this folder"
+            data-testid={`share-category-${category.slug}`}
+          >
+            <Share2 className={`w-3.5 h-3.5 ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`} />
+          </button>
+        )}
+
+        {/* Expand/Collapse button for categories with children */}
+        {hasChildren && (
+          <button
+            className="p-1 rounded hover:bg-black/10 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleExpanded(category.id);
+            }}
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            <ChevronRight
+              className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

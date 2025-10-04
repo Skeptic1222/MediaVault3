@@ -17,6 +17,7 @@ import MusicPage from "@/pages/MusicPage";
 import DocumentsPage from "@/pages/DocumentsPage";
 import UserAdminPage from "@/pages/UserAdminPage";
 import ActivityLogsPage from "@/pages/ActivityLogsPage";
+import InvitePage from "@/pages/invite";
 import NotFound from "@/pages/not-found";
 import { AudioPlayer } from "@/components/AudioPlayer";
 
@@ -30,6 +31,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Public routes - no authentication required */}
+      <Route path="/invite/:code" component={InvitePage} />
+
       {!isAuthenticated ? (
         <Route path="/" component={Login} />
       ) : (

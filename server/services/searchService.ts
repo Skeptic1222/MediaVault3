@@ -8,7 +8,7 @@ import { db } from '../db';
 import { mediaFiles, files, categories, savedSearches, tags, fileTags } from '../../shared/schema';
 import { eq, and, or, gte, lte, like, ilike, inArray, sql, desc, asc } from 'drizzle-orm';
 import type { SavedSearch, InsertSavedSearch } from '../../shared/schema';
-import { logger } from '../logger';
+import { logger } from '../utils/logger';
 
 export interface SearchCriteria {
   query?: string;               // Full-text search query

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Check, Share2, Lock, Clock, Hash } from "lucide-react";
+import { Copy, Check, Share2, Lock, Clock, Hash, Mail, X } from "lucide-react";
 import type { ShareLink } from "@shared/schema";
 
 interface ShareDialogProps {
@@ -39,6 +39,8 @@ export default function ShareDialog({
   const [maxUses, setMaxUses] = useState("");
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [sharedWithEmails, setSharedWithEmails] = useState<string[]>([]);
+  const [emailInput, setEmailInput] = useState("");
 
   // Fetch existing share links for this resource
   const { data: existingLinks } = useQuery<ShareLink[]>({
@@ -60,11 +62,18 @@ export default function ShareDialog({
           password: usePassword ? password : undefined,
           expiresIn: expiresIn ? parseInt(expiresIn) : undefined,
           maxUses: maxUses ? parseInt(maxUses) : undefined,
+          sharedWithEmails: sharedWithEmails.length > 0 ? sharedWithEmails : undefined,
         }),
       });
     },
     onSuccess: (data: any) => {
-      setShareUrl(data.url);
+      // Use /invite/{code} for email-based shares, /share/{code} for regular shares
+      const shareCode = data.url?.split('/').pop() || data.code;
+      const baseUrl = window.location.origin;
+      const generatedUrl = sharedWithEmails.length > 0
+        ? `${baseUrl}/invite/${shareCode}`
+        : `${baseUrl}/share/${shareCode}`;
+      setShareUrl(generatedUrl);
       queryClient.invalidateQueries({ queryKey: [`/api/share/resource/${resourceType}/${resourceId}`] });
       toast({
         title: "Success",
@@ -122,6 +131,53 @@ export default function ShareDialog({
     return new Date(date).toLocaleDateString();
   };
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleAddEmail = () => {
+    const trimmedEmail = emailInput.trim();
+
+    if (!trimmedEmail) {
+      toast({
+        title: "Error",
+        description: "Please enter an email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateEmail(trimmedEmail)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (sharedWithEmails.includes(trimmedEmail)) {
+      toast({
+        title: "Error",
+        description: "This email has already been added",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSharedWithEmails([...sharedWithEmails, trimmedEmail]);
+    setEmailInput("");
+    toast({
+      title: "Success",
+      description: "Email added successfully",
+    });
+  };
+
+  const handleRemoveEmail = (emailToRemove: string) => {
+    setSharedWithEmails(sharedWithEmails.filter(email => email !== emailToRemove));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -136,6 +192,63 @@ export default function ShareDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Email-Based Sharing */}
+          <div className="space-y-2">
+            <Label htmlFor="email-input" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Share with Specific Users (Email Required)
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Only users with these email addresses can access this resource
+            </p>
+
+            <div className="flex gap-2">
+              <Input
+                id="email-input"
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddEmail();
+                  }
+                }}
+                placeholder="Enter email address"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddEmail}
+                disabled={!emailInput.trim()}
+              >
+                Add
+              </Button>
+            </div>
+
+            {/* Email Chips */}
+            {sharedWithEmails.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-2 bg-secondary rounded-md">
+                {sharedWithEmails.map((email) => (
+                  <div
+                    key={email}
+                    className="flex items-center gap-1 px-2 py-1 bg-background rounded-md text-sm"
+                  >
+                    <span>{email}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveEmail(email)}
+                      className="hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Password Protection */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">

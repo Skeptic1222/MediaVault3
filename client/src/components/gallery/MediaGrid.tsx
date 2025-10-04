@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Lock, Heart, Download, Eye, EyeOff, Check, Square, CheckSquare } from "lucide-react";
+import { Play, Lock, Heart, Download, Eye, EyeOff, Check, Square, CheckSquare, Share2 } from "lucide-react";
 import { LazyThumbnail } from "@/components/LazyThumbnail";
 import { getApiUrl } from "@/lib/api-config";
 import { getSignedMediaUrl } from "@/lib/signed-urls";
@@ -20,21 +20,24 @@ interface MediaGridProps {
   // Infinite scroll props
   isFetchingMore?: boolean;
   sentinelRef?: React.RefObject<HTMLDivElement>;
+  // Share handler
+  onShare?: (mediaId: string, filename: string) => void;
 }
 
-export default function MediaGrid({ 
-  mediaFiles, 
-  isLoading, 
-  selectedIndex, 
+export default function MediaGrid({
+  mediaFiles,
+  isLoading,
+  selectedIndex,
   focusedIndex = 0,
-  onMediaSelect, 
+  onMediaSelect,
   isVaultMode = false,
   decryptionKey,
   selectedItems = new Set<string>(),
   onItemSelect,
   onSelectAll,
   isFetchingMore = false,
-  sentinelRef
+  sentinelRef,
+  onShare
 }: MediaGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -94,6 +97,7 @@ export default function MediaGrid({
               e.stopPropagation();
               onItemSelect?.(file.id, !selectedItems.has(file.id));
             }}
+            onShare={onShare}
           />
         ))}
       </div>
@@ -126,9 +130,10 @@ interface MediaGridItemProps {
   onClick: () => void;
   isChecked: boolean;
   onCheckboxClick: (e: React.MouseEvent) => void;
+  onShare?: (mediaId: string, filename: string) => void;
 }
 
-function MediaGridItem({ file, index, isSelected, isFocused, isVaultMode, decryptionKey, onClick, isChecked, onCheckboxClick }: MediaGridItemProps) {
+function MediaGridItem({ file, index, isSelected, isFocused, isVaultMode, decryptionKey, onClick, isChecked, onCheckboxClick, onShare }: MediaGridItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [thumbnailBlobUrl, setThumbnailBlobUrl] = useState<string | null>(null);
@@ -415,6 +420,19 @@ function MediaGridItem({ file, index, isSelected, isFocused, isVaultMode, decryp
             >
               <Download className="w-4 h-4 text-white" />
             </button>
+            {onShare && (
+              <button
+                className="p-2 bg-black/50 rounded hover:bg-black/70 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(file.id, file.originalName);
+                }}
+                title="Share this file"
+                data-testid={`share-file-${index}`}
+              >
+                <Share2 className="w-4 h-4 text-white" />
+              </button>
+            )}
           </div>
         </div>
       </div>

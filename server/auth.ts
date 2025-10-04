@@ -155,28 +155,12 @@ export function setupAuth(app: Express) {
   // --- Auth routes ---
   // NOTE: BASE_PATH is stripped by middleware, so routes are registered without it
   // Start OAuth: use prompt=select_account to avoid "Continue as …"
-  app.get('/auth/google', (req, res, next) => {
-    console.log('🔵 /auth/google route handler called');
-    console.log('🔵 Request URL:', req.url);
-    console.log('🔵 Request headers host:', req.get('host'));
-    console.log('🔵 callbackURL:', callbackURL);
-
-    const authenticator = passport.authenticate('google', {
+  app.get('/auth/google',
+    passport.authenticate('google', {
       scope: ['profile', 'email'],
       prompt: 'select_account',
-    });
-
-    console.log('🔵 About to call passport.authenticate...');
-
-    authenticator(req, res, (err: any) => {
-      console.log('🔵 Passport authenticate callback called');
-      if (err) {
-        console.error('❌ Passport authentication error:', err);
-        return next(err);
-      }
-      next();
-    });
-  });
+    })
+  );
 
   // Callback
   app.get(

@@ -6,10 +6,10 @@
  */
 
 import { db } from '../db';
-import { shareLinks, albums, folders, files, mediaFiles } from '../../shared/schema';
+import { shareLinks, albums, folders, files, mediaFiles, categories } from '../../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import type { ShareLink, InsertShareLink } from '../../shared/schema';
-import { logger } from '../logger';
+import { logger } from '../utils/logger';
 import { nanoid } from 'nanoid';
 import crypto from 'crypto';
 
@@ -125,8 +125,7 @@ async function verifyResourceOwnership(
           ));
         return !!album;
       }
-      case 'folder':
-      case 'category': {
+      case 'folder': {
         const [folder] = await db
           .select()
           .from(folders)
@@ -135,6 +134,14 @@ async function verifyResourceOwnership(
             eq(folders.userId, userId)
           ));
         return !!folder;
+      }
+      case 'category': {
+        // Categories are shared across all users - just verify it exists
+        const [category] = await db
+          .select()
+          .from(categories)
+          .where(eq(categories.id, resourceId));
+        return !!category;
       }
       case 'file': {
         const [file] = await db
@@ -190,7 +197,7 @@ export async function getShareLinkByCode(code: string): Promise<ShareLinkInfo | 
     }
 
     // Check if max uses reached
-    if (shareLink.maxUses && shareLink.usageCount >= shareLink.maxUses) {
+    if (shareLink.maxUses && shareLink.usageCount !== null && shareLink.usageCount >= shareLink.maxUses) {
       return {
         shareLink,
         resource: null,
@@ -287,13 +294,19 @@ async function getSharedResource(resourceType: ResourceType, resourceId: string)
           .where(eq(albums.id, resourceId));
         return album;
       }
-      case 'folder':
-      case 'category': {
+      case 'folder': {
         const [folder] = await db
           .select()
           .from(folders)
           .where(eq(folders.id, resourceId));
         return folder;
+      }
+      case 'category': {
+        const [category] = await db
+          .select()
+          .from(categories)
+          .where(eq(categories.id, resourceId));
+        return category;
       }
       case 'file': {
         // Try files table first
