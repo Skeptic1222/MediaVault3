@@ -126,17 +126,39 @@ export function securityHeaders() {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
     // Content Security Policy
-    res.setHeader('Content-Security-Policy',
-      "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-      "style-src 'self' 'unsafe-inline'; " +
-      "img-src 'self' data: blob:; " +
-      "font-src 'self' data:; " +
-      "connect-src 'self'; " +
-      "media-src 'self' blob:; " +
-      "object-src 'none'; " +
-      "frame-ancestors 'none';"
-    );
+    // Note: 'unsafe-inline' and 'unsafe-eval' are kept for Vite HMR in development
+    // TODO: Implement nonce-based CSP for production builds
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    const cspDirectives = [
+      "default-src 'self'",
+      // Scripts: Allow self and inline (for Vite)
+      isProduction
+        ? "script-src 'self'"
+        : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // Styles: Allow self, inline, and Google Fonts
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      // Images: Allow self, data URIs, and blob URLs
+      "img-src 'self' data: blob: https:",
+      // Fonts: Allow self, data URIs, and Google Fonts
+      "font-src 'self' data: https://fonts.gstatic.com",
+      // Connect: Allow self (for API calls)
+      "connect-src 'self' ws: wss:",
+      // Media: Allow self and blob URLs
+      "media-src 'self' blob:",
+      // Objects: Disallow all
+      "object-src 'none'",
+      // Base URI: Restrict to self
+      "base-uri 'self'",
+      // Form actions: Restrict to self
+      "form-action 'self'",
+      // Frame ancestors: Disallow all (prevent clickjacking)
+      "frame-ancestors 'none'",
+      // Upgrade insecure requests in production
+      isProduction ? "upgrade-insecure-requests" : ""
+    ].filter(Boolean);
+
+    res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
 
     // Strict Transport Security (only for HTTPS)
     if (req.secure || req.headers['x-forwarded-proto'] === 'https') {

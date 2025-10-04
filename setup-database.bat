@@ -1,8 +1,13 @@
 @echo off
 REM Setup PostgreSQL database for MediaVault
+REM SECURITY: This script should use PostgreSQL .pgpass file or prompt for credentials
 
 echo Creating MediaVault database...
-set PGPASSWORD=postgres
+echo.
+echo NOTE: You will be prompted for the PostgreSQL password
+echo       Or configure a .pgpass file for automated setup
+echo.
+
 "C:\Program Files\PostgreSQL\17\bin\createdb.exe" -U postgres -h localhost mediavault 2>nul
 
 if %ERRORLEVEL% EQU 0 (
