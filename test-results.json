@@ -242,40 +242,32 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "timedOut",
-                      "duration": 31695,
+                      "status": "failed",
+                      "duration": 6206,
                       "error": {
-                        "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m",
-                        "stack": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n    at C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts:4:8",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  getByTestId('create-folder-gallery')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('create-folder-gallery')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  getByTestId('create-folder-gallery')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('create-folder-gallery')\u001b[22m\n\n    at C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts:19:38",
                         "location": {
                           "file": "C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts",
-                          "column": 8,
-                          "line": 4
+                          "column": 38,
+                          "line": 19
                         },
-                        "snippet": "\u001b[0m \u001b[90m 2 |\u001b[39m\n \u001b[90m 3 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Gallery Features'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 4 |\u001b[39m   test\u001b[33m.\u001b[39mbeforeEach(\u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m   |\u001b[39m        \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 5 |\u001b[39m     \u001b[90m// Navigate to the application\u001b[39m\n \u001b[90m 6 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'http://localhost:3001/mediavault'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 7 |\u001b[39m\u001b[0m"
+                        "snippet": "\u001b[0m \u001b[90m 17 |\u001b[39m     \u001b[90m// Check if the create folder button exists\u001b[39m\n \u001b[90m 18 |\u001b[39m     \u001b[36mconst\u001b[39m createFolderButton \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mgetByTestId(\u001b[32m'create-folder-gallery'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 19 |\u001b[39m     \u001b[36mawait\u001b[39m expect(createFolderButton)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                      \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 20 |\u001b[39m\n \u001b[90m 21 |\u001b[39m     \u001b[90m// Click the create folder button\u001b[39m\n \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m createFolderButton\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\u001b[0m"
                       },
                       "errors": [
                         {
                           "location": {
                             "file": "C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts",
-                            "column": 8,
-                            "line": 4
+                            "column": 38,
+                            "line": 19
                           },
-                          "message": "\u001b[31mTest timeout of 30000ms exceeded while running \"beforeEach\" hook.\u001b[39m\n\n  2 |\n  3 | test.describe('Gallery Features', () => {\n> 4 |   test.beforeEach(async ({ page }) => {\n    |        ^\n  5 |     // Navigate to the application\n  6 |     await page.goto('http://localhost:3001/mediavault');\n  7 |\n    at C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts:4:8"
-                        },
-                        {
-                          "location": {
-                            "file": "C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts",
-                            "column": 16,
-                            "line": 12
-                          },
-                          "message": "Error: page.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('a[href=\"/mediavault/gallery\"]')\u001b[22m\n\n\n  10 |\n  11 |     // Navigate to gallery\n> 12 |     await page.click('a[href=\"/mediavault/gallery\"]');\n     |                ^\n  13 |     await page.waitForURL('**/gallery');\n  14 |   });\n  15 |\n    at C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts:12:16"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  getByTestId('create-folder-gallery')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('create-folder-gallery')\u001b[22m\n\n\n  17 |     // Check if the create folder button exists\n  18 |     const createFolderButton = page.getByTestId('create-folder-gallery');\n> 19 |     await expect(createFolderButton).toBeVisible();\n     |                                      ^\n  20 |\n  21 |     // Click the create folder button\n  22 |     await createFolderButton.click();\n    at C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts:19:38"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-04T08:06:13.817Z",
+                      "startTime": "2025-10-04T16:36:39.392Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -287,12 +279,17 @@
                           "name": "video",
                           "contentType": "video/webm",
                           "path": "C:\\inetpub\\wwwroot\\MediaVault\\test-results\\gallery-features-Gallery-F-4303a-d-be-visible-and-functional-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\inetpub\\wwwroot\\MediaVault\\test-results\\gallery-features-Gallery-F-4303a-d-be-visible-and-functional-chromium\\error-context.md"
                         }
                       ],
                       "errorLocation": {
                         "file": "C:\\inetpub\\wwwroot\\MediaVault\\tests\\e2e\\gallery-features.spec.ts",
-                        "column": 8,
-                        "line": 4
+                        "column": 38,
+                        "line": 19
                       }
                     }
                   ],
@@ -311,8 +308,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-04T08:06:12.638Z",
-    "duration": 33165.628000000004,
+    "startTime": "2025-10-04T16:36:38.373Z",
+    "duration": 7410.844999999999,
     "expected": 0,
     "skipped": 0,
     "unexpected": 1,

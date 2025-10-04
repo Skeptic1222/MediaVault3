@@ -1461,7 +1461,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
 
       // Generate slug from name if not provided
-      const slug = req.body.slug || req.body.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      let baseSlug = req.body.slug || req.body.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      let slug = baseSlug;
+
+      // Ensure slug is unique by checking if it exists and appending timestamp if needed
+      const existingCategories = await storage.getCategories();
+      if (existingCategories.some((cat: any) => cat.slug === slug)) {
+        slug = `${baseSlug}-${Date.now()}`;
+      }
 
       const categoryData = insertCategorySchema.parse({ ...req.body, slug });
       const category = await storage.createCategory(categoryData);
