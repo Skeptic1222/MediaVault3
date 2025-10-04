@@ -69,7 +69,7 @@ export default function ShareDialog({
     onSuccess: (data: any) => {
       // Use /invite/{code} for email-based shares, /share/{code} for regular shares
       const shareCode = data.url?.split('/').pop() || data.code;
-      const baseUrl = window.location.origin;
+      const baseUrl = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
       const generatedUrl = sharedWithEmails.length > 0
         ? `${baseUrl}/invite/${shareCode}`
         : `${baseUrl}/share/${shareCode}`;
@@ -354,7 +354,7 @@ export default function ShareDialog({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleCopyLink(`${window.location.origin}/share/${link.code}`)}
+                        onClick={() => handleCopyLink(`${import.meta.env.VITE_PUBLIC_URL || window.location.origin}/share/${link.code}`)}
                       >
                         <Copy className="w-3 h-3" />
                       </Button>
