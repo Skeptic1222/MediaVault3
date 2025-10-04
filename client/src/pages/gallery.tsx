@@ -352,10 +352,10 @@ export default function Gallery() {
     },
   });
 
-  // Create category mutation
-  const createCategoryMutation = useMutation({
+  // Create folder mutation
+  const createFolderMutation = useMutation({
     mutationFn: async (data: { name: string; parentId?: string | null }) => {
-      return await apiRequest('/api/categories', {
+      return await apiRequest('/api/folders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -364,8 +364,8 @@ export default function Gallery() {
       });
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/categories"] });
       toast({
         title: "Success",
         description: "Folder created successfully",
@@ -477,9 +477,9 @@ export default function Gallery() {
   const handleCreateFolder = () => {
     const name = prompt("Enter folder name:");
     if (name && name.trim()) {
-      createCategoryMutation.mutate({
+      createFolderMutation.mutate({
         name: name.trim(),
-        parentId: filters.categoryId || null
+        parentId: null
       });
     }
   };

@@ -24,8 +24,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit2, Trash2, Folder, FolderOpen, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Folder, FolderOpen, Loader2, AlertCircle, Share2 } from "lucide-react";
 import type { Category } from "@shared/schema";
+import ShareDialog from "./ShareDialog";
 
 interface ManageCategoriesDialogProps {
   open: boolean;
@@ -50,6 +51,7 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: ManageCat
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string; fileCount: number } | null>(null);
+  const [shareDialog, setShareDialog] = useState<{ open: boolean; categoryId: string; categoryName: string } | null>(null);
 
   // Fetch categories
   const { data: categories, isLoading: categoriesLoading } = useQuery<Category[]>({
@@ -253,6 +255,14 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: ManageCat
     setDeleteDialogOpen(true);
   };
 
+  const handleShareClick = (category: CategoryWithStats) => {
+    setShareDialog({
+      open: true,
+      categoryId: category.id,
+      categoryName: category.name,
+    });
+  };
+
   const confirmDelete = () => {
     if (categoryToDelete) {
       deleteMutation.mutate(categoryToDelete.id);
@@ -434,6 +444,15 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: ManageCat
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => handleShareClick(category)}
+                            title="Share folder"
+                            data-testid={`button-share-${category.id}`}
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleDeleteClick(category)}
                             className={category.fileCount > 0 ? "text-muted-foreground" : "hover:text-destructive"}
                             title={category.fileCount > 0 ? "Cannot delete category with files" : "Delete category"}
@@ -500,6 +519,17 @@ export default function ManageCategoriesDialog({ open, onOpenChange }: ManageCat
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Share Dialog */}
+      {shareDialog && (
+        <ShareDialog
+          open={shareDialog.open}
+          onOpenChange={(open) => !open && setShareDialog(null)}
+          resourceType="category"
+          resourceId={shareDialog.categoryId}
+          resourceName={shareDialog.categoryName}
+        />
+      )}
     </>
   );
 }
