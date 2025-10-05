@@ -22,9 +22,9 @@ export class EncryptedFilesystemService {
   
   constructor() {
     // Store encrypted files in a dedicated directory
-    this.baseStoragePath = path.join(process.cwd(), 'encrypted_media');
+    this.baseStoragePath = process.env.ENCRYPTED_STORAGE_PATH || path.join(process.cwd(), 'encrypted_media');
     this.ensureStorageDirectory();
-    
+
     // Initialize master key from environment or generate one
     const masterKeyHex = process.env.FILESYSTEM_MASTER_KEY;
     if (masterKeyHex) {

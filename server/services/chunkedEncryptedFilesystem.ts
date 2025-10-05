@@ -47,13 +47,13 @@ export class ChunkedEncryptedFilesystemService {
   private masterKey: Buffer;
 
   constructor() {
-    this.baseDir = path.join(process.cwd(), 'encrypted_media');
+    this.baseDir = process.env.ENCRYPTED_STORAGE_PATH || path.join(process.cwd(), 'encrypted_media');
     this.chunkSize = 2 * 1024 * 1024; // 2MB chunks for optimal streaming
     this.maxRangeWindow = 8 * 1024 * 1024; // 8MB max range to prevent OOM attacks
 
     // Initialize master key
     this.masterKey = this.initializeMasterKey();
-    
+
     // Ensure storage directory exists
     this.ensureStorageDirectory();
   }

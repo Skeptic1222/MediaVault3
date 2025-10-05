@@ -159,7 +159,8 @@ function getVaultPassphrase(token: string, requestingUserId: string): string | n
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadDir = path.join(process.cwd(), 'uploads', 'temp');
+      const baseUploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+      const uploadDir = path.join(baseUploadDir, 'temp');
       fs.mkdirSync(uploadDir, { recursive: true });
       cb(null, uploadDir);
     },
