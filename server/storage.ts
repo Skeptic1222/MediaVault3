@@ -290,31 +290,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCategoryTree(): Promise<Category[]> {
-    const allCategories = await this.getCategories();
-    
-    // Build tree structure
-    const categoryMap = new Map<string, Category & { children?: Category[] }>();
-    const rootCategories: (Category & { children?: Category[] })[] = [];
-    
-    // Initialize map
-    allCategories.forEach(cat => {
-      categoryMap.set(cat.id, { ...cat, children: [] });
-    });
-    
-    // Build tree
-    allCategories.forEach(cat => {
-      const category = categoryMap.get(cat.id)!;
-      if (cat.parentId) {
-        const parent = categoryMap.get(cat.parentId);
-        if (parent) {
-          parent.children!.push(category);
-        }
-      } else {
-        rootCategories.push(category);
-      }
-    });
-    
-    return rootCategories as Category[];
+    // Frontend expects a FLAT array of ALL categories, not a nested tree
+    // The frontend builds its own tree structure from the flat array
+    return await this.getCategories();
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
@@ -403,8 +381,13 @@ export class DatabaseStorage implements IStorage {
       // For Videos category, show only videos
       conditions.push(sql`${files.mimeType} LIKE 'video/%'`);
     } else if (categoryId) {
-      // Since files table doesn't have categoryId, we'll skip category filtering
-      // This could be handled with folder mapping or other logic if needed
+      // Filter by categoryId - files table DOES have folderId that maps to categoryId
+      // IMPORTANT: Only show files with this exact folderId, exclude NULL files
+      conditions.push(eq(files.folderId, categoryId));
+    } else {
+      // When no category is selected (All Media view), only show files without a folder
+      // This prevents uncategorized files from showing up in every folder
+      conditions.push(isNull(files.folderId));
     }
 
     if (isVault) {

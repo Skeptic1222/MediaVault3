@@ -30,6 +30,7 @@ import {
   MoreVertical,
   FolderPlus,
   Filter,
+  CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -454,6 +455,17 @@ export default function FileManager() {
                   </SelectContent>
                 </Select>
 
+                {/* Select All Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  data-testid="button-select-all"
+                >
+                  <CheckSquare className="h-4 w-4 mr-2" />
+                  {selectedItems.size === items?.length ? "Deselect All" : `Select All${items?.length ? ` (${items.length})` : ""}`}
+                </Button>
+
                 {/* More Options */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -464,9 +476,6 @@ export default function FileManager() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setShowSidebar(!showSidebar)}>
                       {showSidebar ? "Hide" : "Show"} Sidebar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleSelectAll}>
-                      {selectedItems.size === items?.length ? "Deselect All" : "Select All"}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => refetchItems()}>
